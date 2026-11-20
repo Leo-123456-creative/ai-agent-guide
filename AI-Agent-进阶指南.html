@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080a12">
+  <meta name="description" content="一份持续进阶的 AI Agent 使用地图：从任务委托、上下文工程到验证、安全与最新动态。">
+  <title>AI Agent 使用进化论 · 新知档案 001</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap');
+
+    :root {
+      --bg: #080a12;
+      --panel: rgba(17, 21, 35, .76);
+      --panel-solid: #111523;
+      --ink: #f0f4ff;
+      --muted: #9ba6bc;
+      --dim: #64718a;
+      --cyan: #62f4ed;
+      --pink: #ff63c3;
+      --lime: #d8ff66;
+      --line: rgba(130, 160, 205, .17);
+      --mono: "DM Mono", "SFMono-Regular", Consolas, monospace;
+      --sans: "Space Grotesk", "Noto Sans SC", system-ui, sans-serif;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 92px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 12% 4%, rgba(40, 220, 205, .12), transparent 30rem),
+        radial-gradient(ellipse at 90% 17%, rgba(255, 71, 181, .10), transparent 34rem),
+        var(--bg);
+      font-family: var(--sans);
+      line-height: 1.75;
+      overflow-x: hidden;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+    ::selection { color: #070910; background: var(--cyan); }
+    .noise, .grid-bg, .cursor-glow { position: fixed; pointer-events: none; inset: 0; z-index: -1; }
+    .grid-bg {
+      opacity: .17;
+      background-image: linear-gradient(rgba(133, 162, 205, .12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(133, 162, 205, .12) 1px, transparent 1px);
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, black, transparent 88%);
+    }
+    .noise {
+      z-index: 20;
+      opacity: .035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+    }
+    .cursor-glow {
+      z-index: -1;
+      background: radial-gradient(330px circle at var(--mx, 50%) var(--my, 30%), rgba(65, 227, 221, .075), transparent 70%);
+    }
+    .progress {
+      position: fixed; z-index: 30; left: 0; top: 0; height: 2px; width: 0;
+      background: linear-gradient(90deg, var(--cyan), var(--pink), var(--lime));
+      box-shadow: 0 0 14px var(--cyan);
+    }
+    .wrap { width: min(var(--max), calc(100% - 48px)); margin: 0 auto; }
+    .mono { font-family: var(--mono); letter-spacing: .06em; }
+    .eyebrow {
+      color: var(--cyan); font-family: var(--mono); font-size: .72rem;
+      letter-spacing: .16em; text-transform: uppercase;
+    }
+    .topbar {
+      position: sticky; top: 0; z-index: 25;
+      border-bottom: 1px solid rgba(130, 160, 205, .12);
+      background: rgba(8, 10, 18, .76); backdrop-filter: blur(18px);
+    }
+    .topbar-inner { height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 700; letter-spacing: .04em; }
+    .brand-mark {
+      width: 27px; height: 27px; display: grid; place-items: center; color: var(--bg);
+      background: var(--cyan); font: 700 .7rem var(--mono); clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
+      box-shadow: 0 0 20px rgba(98, 244, 237, .35);
+    }
+    .nav { display: flex; align-items: center; gap: 27px; color: var(--muted); font-size: .83rem; }
+    .nav a { text-decoration: none; transition: color .2s; }
+    .nav a:hover { color: var(--cyan); }
+    .nav .nav-cta { color: var(--bg); background: var(--lime); padding: 8px 13px; font-weight: 700; }
+
+    .hero { min-height: 670px; display: grid; align-items: center; padding: 95px 0 100px; position: relative; }
+    .hero-inner { position: relative; z-index: 1; }
+    .hero-meta { display: flex; gap: 12px; align-items: center; margin-bottom: 30px; }
+    .status { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(98,244,237,.3); padding: 5px 10px; color: var(--cyan); font: .68rem var(--mono); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 12px var(--lime); animation: blink 1.7s infinite; }
+    h1 { margin: 0; max-width: 920px; font-size: clamp(3.3rem, 8vw, 7rem); line-height: .98; letter-spacing: -.065em; font-weight: 700; }
+    h1 .outline { color: transparent; -webkit-text-stroke: 1px rgba(240,244,255,.7); }
+    h1 .accent { color: var(--cyan); text-shadow: 0 0 35px rgba(98,244,237,.22); }
+    .hero-desc { color: #b8c2d5; max-width: 660px; margin: 28px 0 32px; font-size: clamp(1rem, 2vw, 1.17rem); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .button {
+      display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px;
+      border: 1px solid var(--cyan); color: var(--bg); background: var(--cyan);
+      font-weight: 700; text-decoration: none; transition: transform .2s, box-shadow .2s;
+    }
+    .button:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(98,244,237,.2); }
+    .button.ghost { color: var(--ink); background: transparent; border-color: var(--line); }
+    .hero-index { margin-top: 60px; display: flex; gap: 42px; color: var(--muted); font: .68rem var(--mono); }
+    .hero-index strong { color: var(--ink); display: block; font-size: 1.1rem; font-weight: 500; }
+    .orbital {
+      width: min(35vw, 380px); aspect-ratio: 1; position: absolute; right: 3%; top: 20%;
+      border: 1px solid rgba(98,244,237,.24); border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(98,244,237,.08), transparent 62%);
+      animation: float 8s ease-in-out infinite;
+    }
+    .orbital::before, .orbital::after { content: ""; position: absolute; inset: 12%; border: 1px dashed rgba(255,99,195,.38); border-radius: 50%; animation: spin 25s linear infinite; }
+    .orbital::after { inset: 25%; border-color: rgba(216,255,102,.44); animation-direction: reverse; animation-duration: 17s; }
+    .orbital-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 64px; height: 64px; display: grid; place-items: center; border: 1px solid var(--cyan); color: var(--cyan); font: .72rem var(--mono); box-shadow: 0 0 35px rgba(98,244,237,.24), inset 0 0 25px rgba(98,244,237,.1); }
+    .orbit-label { position: absolute; top: 11%; right: 2%; color: var(--pink); font: .63rem var(--mono); }
+    .scroll-cue { position: absolute; left: 50%; bottom: 25px; color: var(--dim); font: .62rem var(--mono); letter-spacing: .16em; writing-mode: vertical-rl; }
+    .scroll-cue::after { content: ""; display: inline-block; margin-top: 12px; height: 36px; border-left: 1px solid var(--cyan); animation: cue 1.5s infinite; }
+
+    .ticker { overflow: hidden; border-block: 1px solid var(--line); background: rgba(15,19,31,.6); }
+    .ticker-track { width: max-content; display: flex; gap: 44px; padding: 12px 0; animation: ticker 28s linear infinite; color: var(--muted); font: .68rem var(--mono); letter-spacing: .11em; }
+    .ticker-track b { color: var(--cyan); font-weight: 400; }
+    main { padding: 90px 0 120px; }
+    .section { padding: 70px 0; border-bottom: 1px solid var(--line); }
+    .section-head { display: grid; grid-template-columns: 190px 1fr; gap: 28px; margin-bottom: 38px; }
+    .section-no { color: var(--pink); font: .74rem var(--mono); letter-spacing: .12em; padding-top: 11px; }
+    h2 { margin: 0; font-size: clamp(2rem, 4.4vw, 3.6rem); line-height: 1.1; letter-spacing: -.045em; }
+    .section-intro { max-width: 700px; color: var(--muted); margin: 14px 0 0; }
+    .formula { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); background: var(--panel); }
+    .formula-item { min-height: 142px; padding: 21px; border-right: 1px solid var(--line); position: relative; overflow: hidden; }
+    .formula-item:last-child { border-right: 0; }
+    .formula-item::after { content: ""; position: absolute; width: 70px; height: 70px; right: -30px; bottom: -36px; border: 1px solid rgba(98,244,237,.3); transform: rotate(45deg); }
+    .formula-item span { display: block; color: var(--dim); font: .66rem var(--mono); margin-bottom: 16px; }
+    .formula-item b { font-size: 1.05rem; }
+    .formula-item:nth-child(2n) b { color: var(--cyan); }
+    .formula-item:nth-child(3n) b { color: var(--pink); }
+    .callout { margin-top: 20px; padding: 19px 22px; border-left: 2px solid var(--lime); color: #c6d0e0; background: rgba(216,255,102,.045); }
+    .callout strong { color: var(--lime); }
+
+    .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; counter-reset: level; }
+    .level-card { counter-increment: level; min-height: 235px; padding: 21px 18px; border: 1px solid var(--line); background: linear-gradient(145deg, rgba(20,25,41,.9), rgba(13,16,26,.6)); transition: transform .25s, border-color .25s; }
+    .level-card:hover { transform: translateY(-6px); border-color: rgba(98,244,237,.5); }
+    .level-card::before { content: "0" counter(level); color: var(--cyan); font: .68rem var(--mono); }
+    .level-card h3 { margin: 24px 0 9px; font-size: 1.05rem; }
+    .level-card p { margin: 0; color: var(--muted); font-size: .87rem; }
+    .level-card small { display: block; margin-top: 16px; color: var(--dim); font: .65rem var(--mono); }
+
+    .pattern-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .pattern { padding: 24px; border: 1px solid var(--line); background: var(--panel); min-height: 210px; position: relative; }
+    .pattern .tag { color: var(--pink); font: .65rem var(--mono); letter-spacing: .1em; }
+    .pattern h3 { margin: 16px 0 8px; font-size: 1.05rem; }
+    .pattern p { margin: 0; color: var(--muted); font-size: .88rem; }
+    .pattern .arrow { position: absolute; bottom: 19px; right: 21px; color: var(--cyan); font: 1.2rem var(--mono); }
+
+    .ladder { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .ladder-card { padding: 25px; border: 1px solid var(--line); background: rgba(16,20,33,.74); }
+    .ladder-card h3 { margin: 0 0 8px; font-size: 1.02rem; }
+    .ladder-card p { color: var(--muted); margin: 0; font-size: .88rem; }
+    .ladder-card .num { color: var(--lime); font: .68rem var(--mono); }
+
+    .prompt-box { border: 1px solid rgba(98,244,237,.33); background: #0d111c; box-shadow: 0 0 45px rgba(26,200,190,.06); }
+    .prompt-top { padding: 13px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); color: var(--muted); font: .68rem var(--mono); }
+    .lights { display: flex; gap: 6px; }
+    .lights i { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); }
+    .lights i:nth-child(2) { background: var(--lime); }
+    .lights i:nth-child(3) { background: var(--cyan); }
+    pre { margin: 0; padding: 24px; overflow-x: auto; color: #ced8e9; white-space: pre-wrap; font: .83rem/1.9 var(--mono); }
+    pre .key { color: var(--cyan); }
+    .copy-btn { border: 1px solid rgba(98,244,237,.38); color: var(--cyan); background: transparent; padding: 7px 11px; cursor: pointer; font: .65rem var(--mono); transition: background .2s, color .2s; }
+    .copy-btn:hover, .copy-btn.copied { color: var(--bg); background: var(--cyan); }
+
+    .news-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 14px; }
+    .news-card { padding: 23px; border: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 250px; }
+    .news-card.featured { border-color: rgba(255,99,195,.4); background: linear-gradient(145deg, rgba(255,99,195,.08), rgba(17,21,35,.72) 58%); }
+    .news-date { color: var(--pink); font: .66rem var(--mono); }
+    .news-card h3 { font-size: 1.12rem; line-height: 1.4; margin: 17px 0 10px; }
+    .news-card p { margin: 0; color: var(--muted); font-size: .85rem; }
+    .news-card a { color: var(--cyan); margin-top: auto; padding-top: 18px; font: .68rem var(--mono); text-decoration: none; }
+    .news-note { color: var(--dim); font-size: .78rem; margin: 17px 0 0; }
+
+    .guardrails { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .guard { padding: 25px; border: 1px solid var(--line); background: var(--panel); }
+    .guard h3 { margin: 0 0 13px; font-size: 1rem; }
+    .guard ul { padding: 0 0 0 18px; margin: 0; color: var(--muted); font-size: .88rem; }
+    .guard li { padding: 4px 0; }
+    .guard.safe h3 { color: var(--lime); }
+    .guard.risk h3 { color: var(--pink); }
+    .source-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
+    .source-list a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); padding: 10px 0; font-size: .83rem; }
+    .source-list a:hover { color: var(--cyan); border-color: var(--cyan); }
+    .source-list span { display: block; color: var(--dim); font: .62rem var(--mono); margin-bottom: 4px; }
+
+    .end-card { margin-top: 60px; padding: clamp(26px, 5vw, 52px); border: 1px solid rgba(98,244,237,.35); background: linear-gradient(120deg, rgba(98,244,237,.09), rgba(255,99,195,.07)); display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+    .end-card h2 { font-size: clamp(1.8rem, 4vw, 3rem); }
+    .end-card p { margin: 10px 0 0; color: var(--muted); }
+    footer { border-top: 1px solid var(--line); padding: 25px 0 38px; color: var(--dim); font: .65rem var(--mono); }
+    .footer-inner { display: flex; justify-content: space-between; gap: 20px; }
+
+    [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+    [data-reveal].visible { opacity: 1; transform: translateY(0); }
+    [data-delay="1"] { transition-delay: .08s; }
+    [data-delay="2"] { transition-delay: .16s; }
+    [data-delay="3"] { transition-delay: .24s; }
+    .glitch { animation: glitch-in .8s both; }
+    @keyframes blink { 50% { opacity: .3; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes float { 50% { transform: translateY(-15px) rotate(2deg); } }
+    @keyframes cue { 50% { opacity: .25; transform: scaleY(.55); transform-origin: top; } }
+    @keyframes ticker { to { transform: translateX(-50%); } }
+    @keyframes glitch-in { 0% { opacity: 0; transform: translateY(15px); text-shadow: 3px 0 var(--pink), -3px 0 var(--cyan); } 40% { text-shadow: -2px 0 var(--pink), 2px 0 var(--cyan); } 100% { opacity: 1; transform: none; text-shadow: none; } }
+    @media (max-width: 900px) {
+      .orbital { opacity: .35; right: -7%; top: 24%; }
+      .formula { grid-template-columns: repeat(2, 1fr); }
+      .formula-item { border-bottom: 1px solid var(--line); }
+      .formula-item:nth-child(2n) { border-right: 0; }
+      .formula-item:last-child { grid-column: span 2; border-bottom: 0; }
+      .levels { grid-template-columns: repeat(2, 1fr); }
+      .level-card:last-child { grid-column: span 2; min-height: auto; }
+      .pattern-grid { grid-template-columns: repeat(2, 1fr); }
+      .news-grid { grid-template-columns: 1fr 1fr; }
+      .news-card.featured { grid-column: span 2; }
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 32px, var(--max)); }
+      .topbar-inner { height: 58px; }
+      .nav { gap: 0; }
+      .nav a:not(.nav-cta) { display: none; }
+      .hero { min-height: 640px; padding-top: 78px; }
+      .hero-desc { max-width: 530px; }
+      .orbital { width: 260px; top: auto; bottom: 80px; right: -95px; opacity: .27; }
+      .hero-index { gap: 22px; margin-top: 42px; }
+      .section { padding: 55px 0; }
+      .section-head { display: block; }
+      .section-no { display: block; margin-bottom: 13px; }
+      .formula { grid-template-columns: 1fr 1fr; }
+      .formula-item { padding: 16px; min-height: 125px; }
+      .formula-item:last-child { grid-column: span 2; }
+      .levels, .pattern-grid, .ladder, .news-grid, .guardrails, .source-list { grid-template-columns: 1fr; }
+      .level-card, .level-card:last-child { grid-column: auto; min-height: 190px; }
+      .pattern { min-height: 185px; }
+      .news-card.featured { grid-column: auto; }
+      .end-card { display: block; }
+      .end-card .button { margin-top: 22px; }
+      .footer-inner { display: block; }
+      .footer-inner span { display: block; margin-top: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      [data-reveal] { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+  <div class="grid-bg"></div><div class="noise"></div><div class="cursor-glow" id="glow"></div>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#top" aria-label="回到顶部"><span class="brand-mark">NX</span><span>NEXUS <span style="color:var(--dim);font-weight:400">/ FIELD NOTES</span></span></a>
+      <nav class="nav" aria-label="文章导航">
+        <a href="#system">核心方法</a><a href="#patterns">进阶用法</a><a href="#pulse">新知脉冲</a>
+        <a class="nav-cta" href="#sources">资料库 ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="wrap hero-inner">
+      <div class="hero-meta glitch"><span class="status"><i class="dot"></i> FIELD GUIDE · 001</span><span class="eyebrow">UPDATED 2026.11.16</span></div>
+      <h1 class="glitch">AI AGENT<br><span class="outline">使用</span><span class="accent">进化论</span></h1>
+      <p class="hero-desc">从“会问 AI”到“设计一套能交付的工作系统”。一份持续进阶地图：任务委托、上下文工程、验证闭环、安全边界，以及值得追踪的新知。</p>
+      <div class="hero-actions">
+        <a class="button" href="#system">启动进化协议 <span>↓</span></a>
+        <a class="button ghost" href="#pulse">扫描最新动态 <span>↗</span></a>
+      </div>
+      <div class="hero-index">
+        <div><strong>05</strong>能力层级</div><div><strong>06</strong>非常规用法</div><div><strong>03</strong>近期信号</div>
+      </div>
+    </div>
+    <div class="orbital" aria-hidden="true"><span class="orbit-label">AGENT / LOOP</span><span class="orbital-core">AI<br>↻</span></div>
+    <div class="scroll-cue">SCROLL TO EXPLORE</div>
+  </section>
+
+  <div class="ticker" aria-hidden="true"><div class="ticker-track">
+    <span>CONTEXT <b>✳</b> TOOLS <b>✳</b> VERIFICATION <b>✳</b> HUMAN CONTROL <b>✳</b> ITERATION <b>✳</b></span>
+    <span>CONTEXT <b>✳</b> TOOLS <b>✳</b> VERIFICATION <b>✳</b> HUMAN CONTROL <b>✳</b> ITERATION <b>✳</b></span>
+  </div></div>
+
+  <main class="wrap">
+    <section class="section" id="system">
+      <div class="section-head" data-reveal>
+        <span class="section-no">01 / THE CORE</span>
+        <div><h2>让 Agent 变强的<br><span style="color:var(--cyan)">五个控制旋钮</span></h2><p class="section-intro">提示词只是入口。真正的杠杆，是任务定义、上下文质量、工具能力、验证机制和权限边界。</p></div>
+      </div>
+      <div class="formula" data-reveal data-delay="1">
+        <div class="formula-item"><span>01 / INTENT</span><b>明确目标</b></div>
+        <div class="formula-item"><span>02 / CONTEXT</span><b>合适上下文</b></div>
+        <div class="formula-item"><span>03 / ACTION</span><b>对的工具</b></div>
+        <div class="formula-item"><span>04 / PROOF</span><b>结果可检查</b></div>
+        <div class="formula-item"><span>05 / BOUNDARY</span><b>权限有边界</b></div>
+      </div>
+      <div class="callout" data-reveal><strong>核心公式：</strong>明确目标 + 合适上下文 + 对的工具 + 可验证结果 + 适度自主权。不要一开始就堆多 Agent；先证明简单流程不够用。</div>
+    </section>
+
+    <section class="section" id="levels">
+      <div class="section-head" data-reveal>
+        <span class="section-no">02 / LEVEL UP</span>
+        <div><h2>五级进化路线</h2><p class="section-intro">不是“懂不懂代码”的分级，而是从单次回答进化到可复用、可衡量的工作流。</p></div>
+      </div>
+      <div class="levels">
+        <article class="level-card" data-reveal><h3>会提需求</h3><p>讲清目标、背景、限制和验收标准；模糊任务先拆解。</p><small>EXAMPLE / 把需求变成方案</small></article>
+        <article class="level-card" data-reveal data-delay="1"><h3>会搭流程</h3><p>研究、起草、核查分步骤进行，每一步都有明确产出。</p><small>EXAMPLE / 来源 → 报告 → 核验</small></article>
+        <article class="level-card" data-reveal data-delay="2"><h3>会给上下文</h3><p>提供文件、样例、规则和历史决策，减少凭空猜测。</p><small>EXAMPLE / 用真实样例校准风格</small></article>
+        <article class="level-card" data-reveal data-delay="3"><h3>会用工具</h3><p>让 AI 搜索、读文档、分析表格或操作项目；不是只聊天。</p><small>EXAMPLE / 监测、整理、分析</small></article>
+        <article class="level-card" data-reveal><h3>会设计 Agent</h3><p>加入记忆、权限、分工和评测，让工作可重复并能处理失败。</p><small>EXAMPLE / 可审计的工作系统</small></article>
+      </div>
+      <div class="callout" data-reveal><strong>上下文工程：</strong>不是把资料全塞进对话，而是按需取用、压缩重复信息、保留关键决策与未完成事项。参考 Anthropic 的<a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">上下文工程指南 ↗</a>。</div>
+    </section>
+
+    <section class="section" id="patterns">
+      <div class="section-head" data-reveal>
+        <span class="section-no">03 / UNCOMMON USE</span>
+        <div><h2>跳出“帮我写一篇”</h2><p class="section-intro">把 AI 变成你的流程设计师、对手、审计员和学习搭档。</p></div>
+      </div>
+      <div class="pattern-grid">
+        <article class="pattern" data-reveal><span class="tag">01 / SOP MINING</span><h3>把经验提炼成个人 SOP</h3><p>喂给 AI 你做得好的报告、方案和邮件，让它归纳检查清单、模板与例外处理规则。好样例胜过一长串形容词。</p><span class="arrow">↗</span></article>
+        <article class="pattern" data-reveal data-delay="1"><span class="tag">02 / QUESTION DESIGN</span><h3>让它先找“关键未知数”</h3><p>在做决定前，让 AI 找出结论依赖哪些变量、缺少哪些事实，以及什么证据会改变建议。</p><span class="arrow">↗</span></article>
+        <article class="pattern" data-reveal data-delay="2"><span class="tag">03 / RED TEAM</span><h3>用不同角色拆穿盲点</h3><p>让支持者、反方、执行者和风险审查者分别看同一方案。最终输出争议点和证据，而不是投票。</p><span class="arrow">↗</span></article>
+        <article class="pattern" data-reveal><span class="tag">04 / SHADOW MODE</span><h3>先做“影子 Agent”</h3><p>先只读资料、只生成草稿，不发送、不修改。对比建议与最终决定，发现错误后再逐步开放权限。</p><span class="arrow">↗</span></article>
+        <article class="pattern" data-reveal data-delay="1"><span class="tag">05 / PERSONAL EVALS</span><h3>建立你的真实任务测试集</h3><p>存下 10–20 个常见任务和你认可的答案。改提示或换模型后，用同一批任务比正确率、成本和遗漏。</p><span class="arrow">↗</span></article>
+        <article class="pattern" data-reveal data-delay="2"><span class="tag">06 / PROOF OF DONE</span><h3>把“完成”变成验收条件</h3><p>要求每条行动有负责人和日期；不确定就标待确认；关键事实给出处。漂亮不等于正确。</p><span class="arrow">↗</span></article>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <div class="section-head" data-reveal>
+        <span class="section-no">04 / WEEKLY LOOP</span>
+        <div><h2>每周 30 分钟<br><span style="color:var(--pink)">形成自己的情报闭环</span></h2><p class="section-intro">别被“新品发布”牵着跑。看完资讯，必须能转成一个低风险实验。</p></div>
+      </div>
+      <div class="ladder">
+        <article class="ladder-card" data-reveal><span class="num">STEP 01</span><h3>看一条官方更新</h3><p>搞清楚新功能实际能做什么，以及需要什么工具或权限。</p></article>
+        <article class="ladder-card" data-reveal data-delay="1"><span class="num">STEP 02</span><h3>看一条实测或研究</h3><p>区分产品演示、基准成绩和真实工作表现，不把宣传语当结论。</p></article>
+        <article class="ladder-card" data-reveal><span class="num">STEP 03</span><h3>看一条风险或失败案例</h3><p>关注权限、隐私、成本、误操作和责任归属。</p></article>
+        <article class="ladder-card" data-reveal data-delay="1"><span class="num">STEP 04</span><h3>做一个自己的小实验</h3><p>用真实但低风险的任务测试，然后记下效果、成本和失败点。</p></article>
+      </div>
+      <div class="callout" data-reveal><strong>快速判断新闻价值：</strong>新增了什么能力？有没有独立或可复现的测试？代价是什么？我能用一个小任务验证吗？</div>
+    </section>
+
+    <section class="section" id="template">
+      <div class="section-head" data-reveal>
+        <span class="section-no">05 / COPY PROTOCOL</span>
+        <div><h2>任务委托卡</h2><p class="section-intro">直接复制，填空后交给 AI。最值钱的两栏：验收标准、禁止事项。</p></div>
+      </div>
+      <div class="prompt-box" data-reveal>
+        <div class="prompt-top"><span><i class="lights"><i></i><i></i><i></i></i> AGENT_BRIEF.TXT</span><button class="copy-btn" id="copyBtn" type="button">复制模板 ⧉</button></div>
+        <pre id="promptText"><span class="key">我要完成的任务：</span>
+这项任务服务于什么决定或用途：
+
+<span class="key">背景与材料：</span>
+- 已知事实：
+- 可用文件/链接：
+- 我的偏好或规则：
+
+<span class="key">请按以下流程工作：</span>
+1. 先复述目标，并指出缺失信息；不要擅自编造。
+2. 制定简短计划，区分事实、推断和建议。
+3. 使用可用资料和工具完成任务；关键事实附来源。
+4. 检查遗漏、矛盾、日期和数字；列出仍无法确认的部分。
+5. 给我最终交付物，并说明你做了哪些检查。
+
+<span class="key">交付格式：</span>
+<span class="key">验收标准：</span>
+<span class="key">禁止事项：</span>
+<span class="key">需要我确认后才能执行的动作：</span></pre>
+      </div>
+    </section>
+
+    <section class="section" id="pulse">
+      <div class="section-head" data-reveal>
+        <span class="section-no">06 / SIGNALS · 2026.11</span>
+        <div><h2>新知脉冲</h2><p class="section-intro">截至 2026 年 11 月 16 日。看趋势，也看证据边界。</p></div>
+      </div>
+      <div class="news-grid">
+        <article class="news-card featured" data-reveal><span class="news-date">2026.11.10 / GOOGLE</span><h3>Agent 开始被放进复杂文件任务里考试</h3><p>Google 发布多模态知识工作基准 MKA，测试 Agent 跨视觉复杂文件完成真实知识工作。基准成绩说明特定测试表现，不等于现实工作已普遍可靠。</p><a href="https://blog.google/innovation-and-ai/models-and-research/gemini-models/multimodal-knowledge-agent-benchmark/" target="_blank" rel="noopener">阅读 Google 官方介绍 ↗</a></article>
+        <article class="news-card" data-reveal data-delay="1"><span class="news-date">2026.11.11 / SALESFORCE</span><h3>Agent 尝试自动跑模型研发闭环</h3><p>SFR-AutoR&D 尝试提出假设、运行实验，并用结果验证是否保留改进。关键观察点：对照实验和可复核证据。</p><a href="https://www.salesforce.com/news/stories/agents-that-improve-ai-models/" target="_blank" rel="noopener">阅读发布说明 ↗</a></article>
+        <article class="news-card" data-reveal data-delay="2"><span class="news-date">2026.11.10 / IBM × MICROSOFT</span><h3>企业 Agent 平台押注行业流程和治理</h3><p>合作公告强调行业工作流、企业系统和治理。规模与效果数字来自厂商公告，应等待独立评测和实际案例。</p><a href="https://news.microsoft.com/source/2026/11/10/ibm-and-microsoft-announce-a-new-ai-agent-platform-designed-for-industry-specific-transformation/" target="_blank" rel="noopener">阅读 Microsoft 公告 ↗</a></article>
+      </div>
+      <p class="news-note" data-reveal>编辑注：产品发布中的效果描述属于厂商声明；读新闻时要分清公告、独立测试和现实部署结果。</p>
+    </section>
+
+    <section class="section" id="safety">
+      <div class="section-head" data-reveal>
+        <span class="section-no">07 / SAFETY LAYER</span>
+        <div><h2>能力越强，边界越要清楚</h2><p class="section-intro">把 Agent 当成会犯错、会读到不可信内容、也可能误用工具的协作者。</p></div>
+      </div>
+      <div class="guardrails">
+        <article class="guard safe" data-reveal><h3>✓ 推荐默认设置</h3><ul><li>最小权限：只开放当前任务需要的工具和数据。</li><li>先只读、先草稿；发送、购买、删除等动作需确认。</li><li>重要结果留痕：来源、工具、修改和检查记录可追踪。</li><li>用低风险任务试运行，观察成本、重试和失败方式。</li></ul></article>
+        <article class="guard risk" data-reveal data-delay="1"><h3>! 特别留意</h3><ul><li>邮件、网页、文档里的文字可能是不可信指令，不应扩大 Agent 权限。</li><li>私人数据 + 不可信内容 + 对外发送能力，组合风险尤其高。</li><li>不要把一次成功当可靠；重复测试并检查异常情况。</li><li>高影响决定保留人工审核，不能只靠提示词保证安全。</li></ul></article>
+      </div>
+      <div class="callout" data-reveal>延伸阅读：<a href="https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP Agent 安全清单 ↗</a> · <a href="https://simonwillison.net/2025/Jun/16/the-lethal-trifecta" target="_blank" rel="noopener">Agent 的“致命三件套” ↗</a></div>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-head" data-reveal>
+        <span class="section-no">08 / SOURCE NODE</span>
+        <div><h2>资料库 / 原始信号</h2><p class="section-intro">优先读原始文档和方法文章；行业宣传稿中的效果数字需独立核实。</p></div>
+      </div>
+      <div class="source-list" data-reveal>
+        <a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener"><span>ANTHROPIC / AGENT DESIGN</span>Building effective AI agents</a>
+        <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener"><span>ANTHROPIC / CONTEXT</span>Effective context engineering for AI agents</a>
+        <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" rel="noopener"><span>ANTHROPIC / EVALUATION</span>Demystifying evals for AI agents</a>
+        <a href="https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices" target="_blank" rel="noopener"><span>MCP / SECURITY</span>Security best practices</a>
+        <a href="https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html" target="_blank" rel="noopener"><span>OWASP / SECURITY</span>AI Agent Security Cheat Sheet</a>
+        <a href="https://simonwillison.net/2025/Jun/16/the-lethal-trifecta" target="_blank" rel="noopener"><span>SIMON WILLISON / RISK</span>The lethal trifecta for AI agents</a>
+        <a href="https://blog.google/innovation-and-ai/models-and-research/gemini-models/multimodal-knowledge-agent-benchmark/" target="_blank" rel="noopener"><span>GOOGLE / NEWS</span>Multimodal Knowledge Agent benchmark</a>
+        <a href="https://www.salesforce.com/news/stories/agents-that-improve-ai-models/" target="_blank" rel="noopener"><span>SALESFORCE / NEWS</span>R&D agents that improve AI models</a>
+      </div>
+      <div class="end-card" data-reveal>
+        <div><span class="eyebrow">NEXT ACTION / THIS WEEK</span><h2>挑一个重复任务，<br>让它第一次变成系统。</h2><p>先观察、再验证、最后才自动化。</p></div>
+        <a class="button" href="#template">拿走任务委托卡 ↗</a>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap footer-inner"><div>© NEXUS FIELD NOTES · 新知分享 / 文章区</div><span>DESIGNED FOR CURIOUS HUMANS + USEFUL MACHINES</span></div></footer>
+
+  <script>
+    (() => {
+      const progress = document.getElementById("progress");
+      const updateProgress = () => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        progress.style.width = `${max > 0 ? (window.scrollY / max) * 100 : 0}%`;
+      };
+      window.addEventListener("scroll", updateProgress, { passive: true });
+      updateProgress();
+
+      const revealItems = document.querySelectorAll("[data-reveal]");
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries, obs) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              obs.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: "0px 0px -35px 0px" });
+        revealItems.forEach(item => observer.observe(item));
+      } else {
+        revealItems.forEach(item => item.classList.add("visible"));
+      }
+
+      const glow = document.getElementById("glow");
+      window.addEventListener("pointermove", event => {
+        glow.style.setProperty("--mx", `${event.clientX}px`);
+        glow.style.setProperty("--my", `${event.clientY}px`);
+      }, { passive: true });
+
+      const copyBtn = document.getElementById("copyBtn");
+      copyBtn.addEventListener("click", async () => {
+        const text = document.getElementById("promptText").innerText;
+        try {
+          await navigator.clipboard.writeText(text);
+          copyBtn.textContent = "已复制 ✓";
+          copyBtn.classList.add("copied");
+          setTimeout(() => {
+            copyBtn.textContent = "复制模板 ⧉";
+            copyBtn.classList.remove("copied");
+          }, 1800);
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents(document.getElementById("promptText"));
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          copyBtn.textContent = "请手动复制";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

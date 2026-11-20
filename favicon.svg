@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>AI Agent 使用进化论</title>
+  <polygon points="4,4 60,4 60,46 46,60 4,60" fill="#62f4ed"/>
+  <rect x="15" y="17" width="7" height="30" fill="#080a12"/>
+  <rect x="42" y="17" width="7" height="30" fill="#080a12"/>
+  <polygon points="17.81,17 26.19,17 46.2,47 37.82,47" fill="#080a12"/>
+  <polygon points="60,46 60,60 46,60" fill="#ff63c3"/>
+</svg>
